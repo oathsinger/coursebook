@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Personal course planner: subjects, modules, assignments and due dates.">
+<meta name="theme-color" content="#EEF0F3">
+<title>Nick's Coursebook</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232E47C2'/%3E%3Cpath d='M9 9h14M9 16h14M9 23h9' stroke='white' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{margin:0}
+body{font:14px system-ui,-apple-system,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: fixed left rail of subjects + scrolling work pane; rail collapses to a top strip on phones. */
+:root{
+  --bg:#EEF0F3; --surface:#FFFFFF; --sunk:#E4E7EC; --ink:#1B2130; --muted:#5B6474; --line:#D7DBE2;
+  --accent:#2E47C2; --accent-ink:#FFFFFF; --accent-soft:#E3E8FB;
+  --late:#B83A26; --late-soft:#FBE7E3; --soon:#9A6510; --soon-soft:#FBF0DC; --done:#2B7F52; --done-soft:#E1F3E8;
+  --c-cobalt:#2E47C2; --c-teal:#11806F; --c-plum:#7A3D9E; --c-rust:#B4532A; --c-olive:#6A7A1E; --c-rose:#B23A64; --c-slate:#4A5A72; --c-gold:#A77A0C;
+  --f-display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#11141B; --surface:#191D26; --sunk:#0D1015; --ink:#E6E9EF; --muted:#9AA2B1; --line:#2A303C;
+  --accent:#8FA3FF; --accent-ink:#0E1430; --accent-soft:#232B4D;
+  --late:#FF8C75; --late-soft:#3A1F1A; --soon:#F1B657; --soon-soft:#352A15; --done:#6DD39C; --done-soft:#17321F;
+  --c-cobalt:#8FA3FF; --c-teal:#4FCDB8; --c-plum:#C79AE6; --c-rust:#F09A70; --c-olive:#BFD05A; --c-rose:#F08AAF; --c-slate:#A3B3CC; --c-gold:#E8C05A;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#11141B; --surface:#191D26; --sunk:#0D1015; --ink:#E6E9EF; --muted:#9AA2B1; --line:#2A303C;
+  --accent:#8FA3FF; --accent-ink:#0E1430; --accent-soft:#232B4D;
+  --late:#FF8C75; --late-soft:#3A1F1A; --soon:#F1B657; --soon-soft:#352A15; --done:#6DD39C; --done-soft:#17321F;
+  --c-cobalt:#8FA3FF; --c-teal:#4FCDB8; --c-plum:#C79AE6; --c-rust:#F09A70; --c-olive:#BFD05A; --c-rose:#F08AAF; --c-slate:#A3B3CC; --c-gold:#E8C05A;
+  color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;text-wrap:balance;margin:0;letter-spacing:-.01em}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700}
+
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100%}
+.rail{background:var(--surface);border-right:1px solid var(--line);padding-block:20px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:14px;display:flex;flex-direction:column;gap:18px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:baseline;gap:8px}
+.brand h1{font-size:22px}
+.brand span{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--ink);text-decoration:none;min-width:0}
+.nav a:hover{background:var(--sunk)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--ink);font-weight:700}
+.nav .sw{width:10px;height:10px;border-radius:3px;flex:none}
+.nav .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+.nav .ct{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.nav .ct.hot{color:var(--late);font-weight:600}
+.rail .add{margin-top:4px}
+.sync{margin-top:auto;font-size:12px;color:var(--muted);display:flex;gap:6px;align-items:center}
+.sync i{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block}
+.sync.ok i{background:var(--done)} .sync.warn i{background:var(--soon)}
+
+.main{padding-block:28px 64px;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));min-width:0}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.head{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:flex-end;justify-content:space-between}
+.head h2{font-size:32px;line-height:1.1}
+.head .sub{color:var(--muted);margin-top:4px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 13px;border-radius:8px;font-weight:700;font-size:14px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);background:var(--sunk)}
+.btn.danger{color:var(--late);border-color:var(--late)}
+.btn.danger.armed{background:var(--late);color:var(--surface)}
+.btn.sm{padding:4px 9px;font-size:13px}
+
+.seg{display:inline-flex;background:var(--sunk);border-radius:9px;padding:3px}
+.seg button{border:0;background:transparent;padding:5px 12px;border-radius:7px;font-weight:700;font-size:13px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgb(0 0 0 / .08)}
+
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.stat b{font-family:var(--f-display);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat.late b{color:var(--late)}
+
+.group{display:flex;flex-direction:column;gap:6px}
+.group > .label{padding-left:2px;display:flex;gap:8px;align-items:center}
+.group > .label .n{font-family:var(--f-mono);letter-spacing:0}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 14px;border-top:1px solid var(--line);position:relative}
+.item:first-child{border-top:0}
+.item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--stripe,transparent)}
+.item.is-late{--stripe:var(--late)}
+.item.is-soon{--stripe:var(--soon)}
+.item.is-done .ttl{text-decoration:line-through;color:var(--muted)}
+.item .body{min-width:0;cursor:pointer}
+.item .ttl{font-weight:700;overflow-wrap:anywhere}
+.item .meta{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:13px;color:var(--muted);align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:var(--sunk);color:var(--ink)}
+.chip .sw{width:8px;height:8px;border-radius:2px}
+.chip.type{background:transparent;border:1px solid var(--line);color:var(--muted);font-weight:400}
+.due{font-family:var(--f-mono);font-size:12.5px;text-align:right;white-space:nowrap}
+.due small{display:block;color:var(--muted);font-size:11.5px}
+.due.late{color:var(--late)} .due.soon{color:var(--soon)} .due.ok{color:var(--done)}
+.check{appearance:none;width:20px;height:20px;border:2px solid var(--line);border-radius:6px;display:grid;place-items:center;margin:0;background:var(--surface);cursor:pointer}
+.check:hover{border-color:var(--muted)}
+.check:checked{background:var(--done);border-color:var(--done)}
+.check:checked::after{content:"";width:5px;height:10px;border:solid var(--surface);border-width:0 2.5px 2.5px 0;transform:translate(0,-1px) rotate(45deg)}
+
+.module{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.module > header{display:flex;align-items:center;gap:10px;padding:10px 12px 10px 14px;background:var(--sunk);border-bottom:1px solid var(--line)}
+.module.collapsed > header{border-bottom:0}
+.module > header .tog{border:0;background:transparent;padding:2px;display:flex;color:var(--muted)}
+.module > header .tog svg{transition:transform .15s}
+.module.collapsed > header .tog svg{transform:rotate(-90deg)}
+.module > header h3{font-size:16px;flex:1;min-width:0;overflow-wrap:anywhere}
+.module > header .prog{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.module .items .item{border-top:1px solid var(--line)}
+.module .items .item:first-child{border-top:0}
+.module .empty{padding:14px;color:var(--muted);font-size:14px}
+.module .foot{padding:8px 10px;border-top:1px solid var(--line)}
+.module.collapsed .items,.module.collapsed .foot{display:none}
+
+.subhead{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.badge{width:52px;height:52px;border-radius:12px;display:grid;place-items:center;font-family:var(--f-display);font-weight:700;font-size:18px;color:var(--surface);background:var(--subj);flex:none}
+.bar{height:6px;background:var(--sunk);border-radius:99px;overflow:hidden;width:180px;max-width:100%}
+.bar i{display:block;height:100%;background:var(--subj,var(--accent))}
+
+.cal{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.cal-wrap{overflow-x:auto}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(92px,1fr));min-width:644px}
+.cal-dow{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;padding:8px 10px;border-bottom:1px solid var(--line);background:var(--sunk)}
+.cal-day{min-height:104px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px;display:flex;flex-direction:column;gap:3px;min-width:0}
+.cal-day:nth-child(7n){border-right:0}
+.cal-day .d{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+.cal-day.out .d{opacity:.45}
+.cal-day.today .d{color:var(--accent-ink);background:var(--accent);border-radius:6px;padding:0 6px;align-self:flex-start;font-weight:600}
+.ev{font-size:12px;line-height:1.3;padding:2px 6px;border-radius:5px;background:color-mix(in srgb, var(--subj) 16%, var(--surface));border-left:3px solid var(--subj);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;border-top:0;border-right:0;border-bottom:0;text-align:left;color:var(--ink)}
+.ev.done{opacity:.5;text-decoration:line-through}
+
+.empty-state{background:var(--surface);border:1px dashed var(--line);border-radius:var(--r);padding:28px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.empty-state h3{font-size:20px}
+.empty-state p{margin:0;color:var(--muted);max-width:60ch}
+.note{font-size:13px;color:var(--muted)}
+
+/* modal */
+.scrim{position:fixed;inset:0;background:rgb(10 12 18 / .45);display:grid;place-items:center;padding:16px;z-index:50}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:14px;width:min(520px,100%);max-height:calc(100% - 32px);overflow:auto;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 20px 50px rgb(0 0 0 / .25)}
+.sheet h3{font-size:20px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field > span{font-size:13px;font-weight:700;color:var(--muted)}
+.field input,.field select,.field textarea{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.field textarea{min-height:80px;resize:vertical}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.swatches{display:flex;flex-wrap:wrap;gap:8px}
+.swatches button{width:30px;height:30px;border-radius:8px;border:2px solid transparent;background:var(--c)}
+.swatches button[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 2px var(--surface)}
+.sheet .actions{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:4px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom, 0px));background:var(--ink);color:var(--surface);padding:8px 14px;border-radius:8px;font-weight:700;font-size:14px;z-index:60}
+
+/* import & backup */
+.io{width:100%;min-width:0;min-height:170px;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-family:var(--f-mono);font-size:12.5px;line-height:1.55;resize:vertical;color:var(--ink)}
+.fmt{margin:0;background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font-family:var(--f-mono);font-size:12.5px;line-height:1.6}
+.iomsg{border-radius:8px;padding:10px 12px;font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+.iomsg.ok{background:var(--done-soft)}
+.iomsg.bad{background:var(--late-soft)}
+.iomsg b{font-family:var(--f-display)}
+
+/* semester plan */
+.planbar{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;align-items:end}
+.planbar input,.planbar select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.planbar .span{font-family:var(--f-mono);font-size:14px;padding:8px 0}
+.day{display:flex;flex-direction:column;gap:8px}
+.hbar{display:flex;height:14px;border-radius:99px;overflow:hidden;gap:3px}
+.hbar i{background:var(--subj);display:block}
+.hbar i.off{opacity:.35}
+.hleg{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--muted)}
+.hleg span{display:inline-flex;gap:6px;align-items:center}
+.hleg b{width:9px;height:9px;border-radius:2px;background:var(--subj);display:inline-block}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px}
+.plan header{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.plan header .t{flex:1;min-width:0}
+.plan h3{font-size:20px;line-height:1.2}
+.badge.sm{width:42px;height:42px;font-size:14px;border-radius:10px}
+.plan p{margin:0;max-width:68ch}
+.plan dl{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px 14px;margin:0;font-size:14px}
+.plan dt{font-weight:700;color:var(--muted)}
+.plan dd{margin:0;min-width:0}
+.plan ul{margin:0;padding-left:18px}
+.plan details summary{cursor:pointer;font-weight:700;color:var(--accent);font-size:14px}
+.outline{margin:10px 0 0;padding:0;list-style:none;display:grid;font-size:14px}
+.outline li{display:grid;grid-template-columns:70px minmax(0,1fr) auto;gap:10px;padding:5px 0;border-top:1px solid var(--line)}
+.outline .n{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+@media (max-width:760px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .rail{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line);padding-block:14px 10px;padding-right:max(16px, env(safe-area-inset-right, 0px));gap:10px}
+  .nav{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px}
+  .nav a{flex:none;white-space:nowrap}
+  .nav .nm{overflow:visible}
+  .nav .sep{display:none}
+  .sync{margin-top:0}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .head h2{font-size:26px}
+  .grid2{grid-template-columns:1fr}
+  .planbar{grid-template-columns:1fr}
+  .plan dl{grid-template-columns:1fr;gap:2px}
+  .plan dd{margin-bottom:8px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><h1>Coursebook</h1><span>FA26</span></div>
+    <nav class="nav" id="nav"></nav>
+    <button class="btn add" id="addSubjectBtn">+ New subject</button>
+    <div class="sync" id="sync"><i></i><span>Connecting…</span></div>
+  </aside>
+  <main class="main"><div class="wrap" id="view"></div></main>
+</div>
+<div id="modalRoot"></div>
+
+<script>
+(() => {
+"use strict";
+const COLORS = ["cobalt","teal","plum","rust","olive","rose","slate","gold"];
+const TYPES = ["Assignment","Quiz","Exam","Reading","Discussion","Project","Lab","Practice","Tutor"];
+const LS_KEY = "coursebook.v1";
+
+/* ---------- state ---------- */
+let subjects = {};           // id -> subject
+let mode = "loading";        // "db" | "local" | "loading"
+let col = null;              // db collection
+let ui = { showDone:false, showLater:false, calMonth:null, collapsed:{}, planStart:"", genki:1 };
+try { Object.assign(ui.collapsed, JSON.parse(localStorage.getItem(LS_KEY+".ui")||"{}")); } catch(e){}
+try { const p = JSON.parse(localStorage.getItem(LS_KEY+".plan")||"{}"); if (p.start) ui.planStart = p.start; if (p.genki) ui.genki = p.genki; } catch(e){}
+function savePlanPrefs(){ try { localStorage.setItem(LS_KEY+".plan", JSON.stringify({start:ui.planStart, genki:ui.genki})); } catch(e){} }
+
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const $ = s => document.querySelector(s);
+
+/* ---------- dates ---------- */
+const pad = n => String(n).padStart(2,"0");
+function parseDue(s){ if(!s) return null; const [d,t="23:59"] = s.split("T"); const [y,m,dd]=d.split("-").map(Number); const [h,mi]=t.split(":").map(Number); return new Date(y,m-1,dd,h,mi); }
+function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function fmtTime(d){ let h=d.getHours(), m=d.getMinutes(); const ap=h>=12?"pm":"am"; h=h%12||12; return h+(m?":"+pad(m):"")+ap; }
+function fmtDue(d){ return DOW[d.getDay()]+" "+MON[d.getMonth()]+" "+d.getDate()+" · "+fmtTime(d); }
+function relDue(d){
+  const days = Math.round((startOfDay(d)-startOfDay(new Date()))/864e5);
+  if (d < new Date()) { const late = Math.floor((new Date()-d)/864e5); return late<1 ? "overdue" : late+"d overdue"; }
+  if (days===0) return "today"; if (days===1) return "tomorrow"; return "in "+days+" days";
+}
+function dueClass(it){
+  if (it.done) return "ok";
+  const d=parseDue(it.due); if(!d) return "";
+  if (d < new Date()) return "late";
+  if (d - new Date() < 3*864e5) return "soon";
+  return "";
+}
+
+/* ---------- storage ---------- */
+const pending = {}; // id -> {busy, next}
+function persist(id){
+  if (mode === "local") { saveLocal(); return; }
+  if (mode !== "db") return;
+  const p = pending[id] || (pending[id] = {busy:false, queued:false});
+  if (p.busy) { p.queued = true; return; }
+  p.busy = true;
+  const run = async () => {
+    const s = subjects[id];
+    try {
+      if (s) await col.doc(id).set(JSON.parse(JSON.stringify(s)));
+      else await col.doc(id).delete();
+    } catch(e) {
+      if (e && e.code === "unavailable") { await new Promise(r=>setTimeout(r, 600+Math.random()*800)); try { if (subjects[id]) await col.doc(id).set(JSON.parse(JSON.stringify(subjects[id]))); else await col.doc(id).delete(); } catch(e2){ toast("Couldn't save. Check your connection and try again."); } }
+      else if (e && e.code === "quota_exceeded") toast("Storage is full. Delete an old subject to make room.");
+      else toast("Couldn't save that change. Try again.");
+    }
+    if (p.queued) { p.queued=false; return run(); }
+    p.busy = false;
+  };
+  run();
+}
+function saveLocal(){ try { localStorage.setItem(LS_KEY, JSON.stringify(subjects)); } catch(e){} }
+function loadLocal(){ try { return JSON.parse(localStorage.getItem(LS_KEY)||"{}") || {}; } catch(e){ return {}; } }
+function setSync(cls, text){ const el=$("#sync"); el.className="sync "+cls; el.querySelector("span").textContent=text; }
+
+async function init(){
+  render();
+  let db=null, user=null;
+  try {
+    if (window.claude && window.claude.use) {
+      [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    }
+  } catch(e){}
+  let id = null;
+  if (db && user) { try { id = await user.id(); } catch(e){} }
+  if (!db || !id) {
+    mode = "local"; subjects = loadLocal();
+    setSync("warn","Saved in this browser only");
+    render(); return;
+  }
+  col = db.collection("data/users/"+id);
+  let timer = setTimeout(()=>{ setSync("warn","Can't reach storage yet"); if(mode==="loading"){ mode="db"; render(); } }, 10000);
+  col.onSnapshot(snap => {
+    const next = {};
+    snap.docs.forEach(d => { if (d.exists) next[d.id] = JSON.parse(JSON.stringify(d.data())); });
+    // keep local copies for docs with writes in flight
+    Object.keys(pending).forEach(k => { if (pending[k].busy) { if (subjects[k]) next[k]=subjects[k]; else delete next[k]; } });
+    subjects = next;
+    if (!snap.metadata.fromCache) { clearTimeout(timer); setSync("ok","Synced to your account"); }
+    mode = "db";
+    render();
+  }, err => {
+    clearTimeout(timer);
+    mode = "local"; subjects = Object.keys(subjects).length ? subjects : loadLocal();
+    setSync("warn","Saved in this browser only"); render();
+  });
+}
+
+/* ---------- helpers ---------- */
+function ordered(){ return Object.entries(subjects).map(([id,s])=>({id,...s})).sort((a,b)=>(a.order??0)-(b.order??0) || (a.createdAt||0)-(b.createdAt||0)); }
+function allItems(){
+  const out=[];
+  ordered().forEach(s => (s.modules||[]).forEach(m => (m.items||[]).forEach(it => out.push({s, m, it}))));
+  return out;
+}
+function findItem(sid, iid){ const s=subjects[sid]; if(!s) return null; for (const m of s.modules||[]) { const it=(m.items||[]).find(x=>x.id===iid); if (it) return {s,m,it}; } return null; }
+function grade(s){
+  let earned=0, possible=0, done=0, total=0;
+  (s.modules||[]).forEach(m=>(m.items||[]).forEach(it=>{ total++; if(it.done) done++; if (it.score!=null && it.score!=="" && it.points) { earned+=Number(it.score); possible+=Number(it.points); } }));
+  return { pct: possible ? Math.round(earned/possible*1000)/10 : null, earned, possible, done, total };
+}
+function openCount(s){ let n=0, late=0; (s.modules||[]).forEach(m=>(m.items||[]).forEach(it=>{ if(!it.done){ n++; const d=parseDue(it.due); if(d && d<new Date()) late++; } })); return {n, late}; }
+function initials(s){ return (s.code || s.name || "?").replace(/[^A-Za-z0-9 ]/g,"").split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase() || "?"; }
+function colorVar(c){ return "var(--c-"+(COLORS.includes(c)?c:"cobalt")+")"; }
+
+/* ---------- routing ---------- */
+function route(){ const h=location.hash.slice(1); if (h.startsWith("s-") && subjects[h.slice(2)]) return {view:"subject", id:h.slice(2)}; if (h==="calendar") return {view:"calendar"}; if (h==="plan") return {view:"plan"}; if (h==="data") return {view:"data"}; return {view:"upcoming"}; }
+window.addEventListener("hashchange", render);
+
+/* ---------- render ---------- */
+function render(){
+  renderNav();
+  const r = route(), v = $("#view");
+  if (mode==="loading") { v.innerHTML = `<div class="head"><div><h2>Loading your courses…</h2></div></div>`; return; }
+  if (r.view==="subject") v.innerHTML = subjectView(r.id);
+  else if (r.view==="calendar") v.innerHTML = calendarView();
+  else if (r.view==="plan") v.innerHTML = planView();
+  else if (r.view==="data") v.innerHTML = dataView();
+  else v.innerHTML = upcomingView();
+}
+function renderNav(){
+  const r = route();
+  const subs = ordered().map(s => { const c=openCount(s); return `<a href="#s-${s.id}" ${r.view==="subject"&&r.id===s.id?'aria-current="page"':""}><span class="sw" style="background:${colorVar(s.color)}"></span><span class="nm">${esc(s.code||s.name)}</span>${c.n?`<span class="ct ${c.late?"hot":""}">${c.n}</span>`:""}</a>`; }).join("");
+  $("#nav").innerHTML = `
+    <a href="#upcoming" ${r.view==="upcoming"?'aria-current="page"':""}><span class="nm">To do</span></a>
+    <a href="#calendar" ${r.view==="calendar"?'aria-current="page"':""}><span class="nm">Calendar</span></a>
+    <a href="#plan" ${r.view==="plan"?'aria-current="page"':""}><span class="nm">Spring plan</span></a>
+    <a href="#data" ${r.view==="data"?'aria-current="page"':""}><span class="nm">Import &amp; backup</span></a>
+    ${subs ? `<div class="label sep" style="padding:12px 10px 4px">Subjects</div>${subs}` : ""}`;
+}
+
+function itemRow(x, opts={}){
+  const {s, m, it} = x; const d=parseDue(it.due); const dc=dueClass(it);
+  const stripe = it.done ? "is-done" : dc==="late" ? "is-late" : dc==="soon" ? "is-soon" : "";
+  const pts = it.points ? (it.score!=null && it.score!=="" ? `<span class="mono">${esc(it.score)}/${esc(it.points)} pts</span>` : `<span class="mono">${esc(it.points)} pts</span>`) : "";
+  return `<div class="item ${stripe}">
+    <input type="checkbox" class="check" data-act="toggle" data-s="${s.id}" data-i="${it.id}" ${it.done?"checked":""} aria-label="Mark ${esc(it.title)} done">
+    <div class="body" data-act="edit" data-s="${s.id}" data-i="${it.id}" tabindex="0" role="button">
+      <div class="ttl">${esc(it.title)}</div>
+      <div class="meta">
+        ${opts.showSubject ? `<span class="chip"><span class="sw" style="background:${colorVar(s.color)}"></span>${esc(s.code||s.name)}</span>` : ""}
+        <span class="chip type">${esc(it.type||"Assignment")}</span>
+        ${opts.showSubject ? `<span>${esc(m.name)}</span>` : ""}
+        ${pts}
+      </div>
+    </div>
+    <div class="due ${dc}">${d ? `${esc(fmtDue(d))}<small>${it.done?"done":relDue(d)}</small>` : `<small>no due date</small>`}</div>
+  </div>`;
+}
+
+function upcomingView(){
+  const subs = ordered();
+  if (!subs.length) return `
+    <div class="head"><div><h2>To do</h2><div class="sub">Everything due across your subjects, soonest first.</div></div></div>
+    <div class="empty-state">
+      <h3>Set up your first subject</h3>
+      <p>Make a subject for each class, split it into modules (weeks, units, whatever your syllabus uses), and drop assignments in with due dates. Everything due shows up here and on the calendar.</p>
+      <div class="row"><a class="btn primary" href="#plan" style="text-decoration:none">Open the spring plan</a><button class="btn" data-act="new-subject">+ New subject</button><button class="btn" data-act="sample">Load an example subject</button></div>
+      <p class="note">The example is a made-up writing course you can poke at and delete.</p>
+    </div>`;
+  const items = allItems();
+  const now = new Date(), today0 = startOfDay(now), weekEnd = new Date(today0); weekEnd.setDate(weekEnd.getDate()+7);
+  const open = items.filter(x=>!x.it.done);
+  const buckets = {late:[], today:[], week:[], later:[], none:[]};
+  open.forEach(x => { const d=parseDue(x.it.due); if(!d) buckets.none.push(x); else if (d<now) buckets.late.push(x); else if (d<new Date(today0.getTime()+864e5)) buckets.today.push(x); else if (d<weekEnd) buckets.week.push(x); else buckets.later.push(x); });
+  const sortD = a => a.sort((p,q)=>parseDue(p.it.due)-parseDue(q.it.due));
+  Object.values(buckets).forEach(b => b !== buckets.none && sortD(b));
+  const done = items.filter(x=>x.it.done).sort((p,q)=>(parseDue(q.it.due)||0)-(parseDue(p.it.due)||0));
+  const group = (label, arr, cls="", total=arr.length) => arr.length ? `<section class="group"><div class="label" ${cls?`style="color:var(--${cls})"`:""}>${label}<span class="n">${total}</span></div><div class="list">${arr.map(x=>itemRow(x,{showSubject:true})).join("")}</div></section>` : "";
+  const totalWeek = buckets.today.length + buckets.week.length;
+  return `
+    <div class="head"><div><h2>To do</h2><div class="sub">${esc(DOW[now.getDay()])}, ${esc(MON[now.getMonth()])} ${now.getDate()}</div></div>
+      <div class="row"><button class="btn" data-act="new-item">+ Assignment</button></div></div>
+    <div class="stats">
+      <div class="stat late"><span class="label">Overdue</span><b>${buckets.late.length}</b></div>
+      <div class="stat"><span class="label">Next 7 days</span><b>${totalWeek}</b></div>
+      <div class="stat"><span class="label">Open total</span><b>${open.length}</b></div>
+      <div class="stat"><span class="label">Completed</span><b>${done.length}</b></div>
+    </div>
+    ${group("Overdue", buckets.late, "late")}
+    ${group("Due today", buckets.today)}
+    ${group("Next 7 days", buckets.week)}
+    ${group("Later", ui.showLater ? buckets.later : buckets.later.slice(0,8), "", buckets.later.length)}
+    ${buckets.later.length > 8 ? `<div class="row"><button class="btn ghost" data-act="show-later">${ui.showLater ? "Show fewer" : `Show all ${buckets.later.length} later items`}</button></div>` : ""}
+    ${group("No due date", buckets.none)}
+    ${!open.length ? `<div class="empty-state"><h3>Nothing open</h3><p>Every assignment is checked off. Add new ones from a subject page.</p></div>` : ""}
+    ${done.length ? `<div class="row"><button class="btn ghost" data-act="show-done">${ui.showDone?"Hide":"Show"} completed (${done.length})</button></div>` : ""}
+    ${ui.showDone ? group("Completed", done) : ""}`;
+}
+
+function subjectView(id){
+  const s = {id, ...subjects[id]}; const g = grade(s); const pct = g.total ? Math.round(g.done/g.total*100) : 0;
+  const mods = (s.modules||[]).map((m, mi) => {
+    const items = (m.items||[]).slice().sort((a,b)=>(parseDue(a.due)||Infinity)-(parseDue(b.due)||Infinity));
+    const dn = items.filter(i=>i.done).length;
+    const key = id+":"+m.id;
+    const col = key in ui.collapsed ? !!ui.collapsed[key] : defaultCollapsed(items);
+    return `<section class="module ${col?"collapsed":""}">
+      <header>
+        <button class="tog" data-act="collapse" data-k="${key}" data-col="${col?1:0}" aria-label="${col?"Expand":"Collapse"} module" aria-expanded="${!col}"><svg width="16" height="16" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <h3>${esc(m.name)}</h3>
+        <span class="prog">${dn}/${items.length}</span>
+        <button class="btn ghost sm" data-act="edit-module" data-s="${id}" data-m="${m.id}">Edit</button>
+      </header>
+      <div class="items">${items.length ? items.map(it=>itemRow({s, m, it})).join("") : `<div class="empty">No assignments in this module yet.</div>`}</div>
+      <div class="foot"><button class="btn ghost sm" data-act="new-item" data-s="${id}" data-m="${m.id}">+ Add to ${esc(m.name)}</button></div>
+    </section>`;
+  }).join("");
+  return `
+    <div class="head" style="--subj:${colorVar(s.color)}">
+      <div class="subhead">
+        <div class="badge">${esc(initials(s))}</div>
+        <div><h2>${esc(s.name)}</h2><div class="sub">${s.code?`<span class="mono">${esc(s.code)}</span> · `:""}${s.instructor?esc(s.instructor)+" · ":""}${g.done}/${g.total} done</div></div>
+      </div>
+      <div class="row"><button class="btn" data-act="edit-subject" data-s="${id}">Edit subject</button><button class="btn primary" data-act="new-module" data-s="${id}">+ Module</button></div>
+    </div>
+    <div class="stats" style="--subj:${colorVar(s.color)}">
+      <div class="stat"><span class="label">Grade so far</span><b>${g.pct==null?"—":g.pct+"%"}</b><span class="note mono">${g.possible?`${g.earned}/${g.possible} pts`:"no graded work yet"}</span></div>
+      <div class="stat"><span class="label">Progress</span><b>${pct}%</b><div class="bar"><i style="width:${pct}%"></i></div></div>
+      <div class="stat late"><span class="label">Overdue</span><b>${openCount(s).late}</b></div>
+      <div class="stat"><span class="label">Modules</span><b>${(s.modules||[]).length}</b></div>
+    </div>
+    ${mods || `<div class="empty-state"><h3>No modules yet</h3><p>Modules group your work, for example by week or unit. Add one, then put assignments inside it.</p><button class="btn primary" data-act="new-module" data-s="${id}">+ Module</button></div>`}`;
+}
+
+function calendarView(){
+  const now = new Date();
+  const base = ui.calMonth || new Date(now.getFullYear(), now.getMonth(), 1);
+  ui.calMonth = base;
+  const first = new Date(base.getFullYear(), base.getMonth(), 1);
+  const start = new Date(first); start.setDate(1 - first.getDay());
+  const byDay = {};
+  allItems().forEach(x => { const d=parseDue(x.it.due); if(d){ const k=ymd(d); (byDay[k]=byDay[k]||[]).push(x); } });
+  Object.values(byDay).forEach(a=>a.sort((p,q)=>parseDue(p.it.due)-parseDue(q.it.due)));
+  let cells = DOW.map(d=>`<div class="cal-dow">${d}</div>`).join("");
+  const tk = ymd(now);
+  for (let i=0;i<42;i++){
+    const d = new Date(start); d.setDate(start.getDate()+i); const k=ymd(d);
+    if (i>=35 && d.getMonth()!==base.getMonth()) break;
+    const evs = (byDay[k]||[]).map(x=>`<button class="ev ${x.it.done?"done":""}" style="--subj:${colorVar(x.s.color)}" data-act="edit" data-s="${x.s.id}" data-i="${x.it.id}" title="${esc((x.s.code||x.s.name)+": "+x.it.title+" · "+fmtTime(parseDue(x.it.due)))}">${esc(x.it.title)}</button>`).join("");
+    cells += `<div class="cal-day ${d.getMonth()!==base.getMonth()?"out":""} ${k===tk?"today":""}"><span class="d">${d.getDate()}</span>${evs}</div>`;
+  }
+  return `
+    <div class="head"><div><h2>${MON[base.getMonth()]} ${base.getFullYear()}</h2><div class="sub">Tap an assignment to open it.</div></div>
+      <div class="row"><button class="btn" data-act="cal" data-d="-1" aria-label="Previous month">‹</button><button class="btn" data-act="cal" data-d="0">Today</button><button class="btn" data-act="cal" data-d="1" aria-label="Next month">›</button></div></div>
+    <div class="cal"><div class="cal-wrap"><div class="cal-grid">${cells}</div></div></div>`;
+}
+
+/* ---------- mutations ---------- */
+function touch(id){ persist(id); render(); }
+function newSubject(data){ const id=uid(); const ord = Math.max(0,...ordered().map(s=>s.order||0))+1; subjects[id] = {name:data.name, code:data.code||"", instructor:data.instructor||"", color:data.color, order:ord, createdAt:Date.now(), modules:[{id:uid(), name:"Week 1", items:[]}]}; touch(id); location.hash="s-"+id; }
+function loadSample(){
+  const id=uid(); const t=new Date();
+  const at=(days,h=23,m=59)=>{ const d=new Date(t); d.setDate(d.getDate()+days); return ymd(d)+"T"+pad(h)+":"+pad(m); };
+  const mk=(title,type,due,points,extra={})=>({id:uid(),title,type,due,points,score:null,done:false,notes:"",...extra});
+  subjects[id] = { name:"Example: Intro to Fiction", code:"EX 1100", instructor:"Example instructor", color:"teal", order:0, createdAt:Date.now(), modules:[
+    {id:uid(), name:"Unit 1 · Point of view", items:[ mk("Read: three short stories (packet A)","Reading",at(-6),0,{done:true}), mk("POV exercise, 500 words","Assignment",at(-3),20,{done:true,score:18}), mk("Discussion post: whose story is it?","Discussion",at(-1),10) ]},
+    {id:uid(), name:"Unit 2 · Scene and summary", items:[ mk("Scene draft","Assignment",at(2),25), mk("Reading quiz","Quiz",at(4,10,0),15), mk("Peer workshop comments","Discussion",at(9),10) ]},
+    {id:uid(), name:"Final", items:[ mk("Short story portfolio","Project",at(30),100,{notes:"Two revised stories plus a reflection."}) ]}
+  ]};
+  touch(id); location.hash="s-"+id; toast("Example subject added. Delete it from Edit subject.");
+}
+
+/* ---------- spring plan: course templates ---------- */
+function defaultCollapsed(items){
+  if (!items.length) return false;
+  if (items.every(i=>i.done)) return true;
+  const ds = items.map(i=>parseDue(i.due)).filter(Boolean);
+  return ds.length > 0 && Math.min(...ds.map(Number)) - Date.now() > 10*864e5;
+}
+const PLAN_DEFAULT_START = "2027-01-11";
+const PLAN_WEEKS = 15;
+function planStart(){ return ui.planStart || PLAN_DEFAULT_START; }
+function weekDate(w, d){ const [y,m,dd]=planStart().split("-").map(Number); return new Date(y, m-1, dd + (w-1)*7 + d); }
+function dueStr(w, d, time){ return ymd(weekDate(w,d)) + "T" + time; }
+function shortDate(d){ return MON[d.getMonth()]+" "+d.getDate(); }
+// T(title, type, day: 0=Mon…4=Fri, points, notes, time)
+const T = (title, type, day, points=null, notes="", time="17:00") => ({title, type, day, points, notes, time});
+const weekly = arr => arr.map(([name, items], i) => ({ name:`Week ${i+1} · ${name}`, week:i+1, items:items.map(x=>({...x, week:i+1})) }));
+
+const TEMPLATES = [
+{ key:"lit", tier:"Core", name:"Literary Analysis & Critical Writing", code:"LIT 201", color:"cobalt", perDay:2,
+  summary:"Close reading and argument, the two skills every English course grades, practiced on six novels about outsiders, solitude and exile. Weekly short responses build into four revised essays.",
+  outputs:"Three revised analytical essays, a 2,500–3,000 word final essay, and 10 short close readings. Your best essay doubles as a writing sample.",
+  materials:["They Say / I Say (Graff & Birkenstein), any recent edition","Shelley, Frankenstein · Sōseki, Kokoro · Le Guin, A Wizard of Earthsea · Gardner, Grendel · Ishiguro, Never Let Me Go · Clarke, Piranesi","Joyce, Chekhov, Beowulf: free on Project Gutenberg","Purdue OWL for MLA citation"],
+  build: () => weekly([
+    ["Close reading", [
+      T("Read: Joyce, “Araby” and Chekhov, “The Lady with the Dog”","Reading",1,null,"Both are free on Project Gutenberg. Annotate as you read: images, repetitions, shifts in tone, what the narrator notices and ignores."),
+      T("Read: They Say / I Say, Introduction and Ch. 1","Reading",2),
+      T("Close reading: one paragraph, 500 words","Assignment",4,10,"Pick one paragraph from either story. Make a claim about what it does and how, supported by at least three specific details. No plot summary.")]],
+    ["Frankenstein I", [
+      T("Read: Frankenstein, Letters 1–4 and Ch. 1–8","Reading",2),
+      T("Read: They Say / I Say, Ch. 2–3 (summarizing, quoting)","Reading",2),
+      T("Response, 500 words","Assignment",4,10,"Find one moment where Victor cuts himself off from others. What does the novel suggest about why he does it?")]],
+    ["Frankenstein II", [
+      T("Read: Frankenstein, Ch. 9–17 (the creature's story)","Reading",2),
+      T("Response, 500 words","Assignment",4,10,"The creature learns language by watching a family from outside their home. Analyze how that position shapes the way he tells his story.")]],
+    ["Frankenstein III", [
+      T("Read: Frankenstein, Ch. 18–24","Reading",1),
+      T("Essay 1: thesis and outline","Assignment",2,5,"One arguable sentence, then the three or four moves that prove it, each with the passage you'll use."),
+      T("Essay 1 draft, 1,200–1,500 words","Assignment",4,20,"Suggested question: who is the novel's real outsider, and what does your answer reveal about it? Or ask your own.")]],
+    ["Kokoro I", [
+      T("Essay 1 revision","Assignment",2,30,"Revise the thesis and evidence first and the sentences last. Add a short note at the top listing what you changed."),
+      T("Read: Kokoro, Parts 1–2","Reading",3),
+      T("Read: They Say / I Say, Ch. 4–6","Reading",3),
+      T("Response, 500 words","Assignment",4,10,"Why does the young narrator attach himself to Sensei? Argue from the text, not from your guess about the ending.")]],
+    ["Kokoro II", [
+      T("Read: Kokoro, Part 3 (Sensei and His Testament)","Reading",2),
+      T("Response, 500 words","Assignment",4,10,"Sensei's isolation is chosen. Argue what it protects him from and what it costs him.")]],
+    ["A Wizard of Earthsea I", [
+      T("Read: A Wizard of Earthsea, Ch. 1–5","Reading",2),
+      T("Response, 500 words","Assignment",4,10,"Le Guin narrates like someone retelling a legend. Analyze one effect of that distance on how we see Ged.")]],
+    ["A Wizard of Earthsea II", [
+      T("Read: A Wizard of Earthsea, Ch. 6–10","Reading",1),
+      T("Essay 2: thesis and outline","Assignment",2,5),
+      T("Essay 2 draft, 1,500 words (comparative)","Assignment",4,20,"Compare how two of the books so far treat isolation: chosen or imposed, punishment or protection, something to escape or something to understand.")]],
+    ["Grendel I", [
+      T("Essay 2 revision","Assignment",2,30),
+      T("Read: Beowulf, lines 1–836 (Grendel's attacks)","Reading",2,null,"The Gummere translation is free on Project Gutenberg."),
+      T("Read: Grendel, Ch. 1–6","Reading",3),
+      T("Response, 500 words","Assignment",4,10,"What does Gardner keep from Beowulf, and what does he invert?")]],
+    ["Grendel II", [
+      T("Read: Grendel, Ch. 7–12","Reading",2),
+      T("Response, 500 words","Assignment",4,10,"Grendel narrates his own story as the monster. How does Gardner make you take his side, and where does that sympathy break?")]],
+    ["Never Let Me Go I", [
+      T("Read: Never Let Me Go, Part One","Reading",2),
+      T("Read: They Say / I Say, Ch. 7–9","Reading",2),
+      T("Response, 500 words","Assignment",4,10,"Kathy describes terrible things calmly. Analyze how the narration produces that calm and what it hides.")]],
+    ["Never Let Me Go II", [
+      T("Read: Never Let Me Go, Parts Two and Three","Reading",1),
+      T("Essay 3: thesis and outline","Assignment",2,5),
+      T("Essay 3 draft, 1,500 words","Assignment",4,20,"Focus on narration and voice in any book from the course.")]],
+    ["Piranesi I", [
+      T("Essay 3 revision","Assignment",2,30),
+      T("Read: Piranesi, first half","Reading",3),
+      T("Response, 500 words","Assignment",4,10,"Piranesi is alone and content. How does Clarke make solitude read as peace rather than loss?")]],
+    ["Piranesi II", [
+      T("Read: Piranesi, second half","Reading",2),
+      T("Final essay proposal and three critical sources","Assignment",4,10,"One paragraph stating your question and working thesis, plus an annotated list of three scholarly sources (Google Scholar or a library database).")]],
+    ["Final essay", [
+      T("Final essay: full draft","Assignment",2,null,"Read it aloud once before revising."),
+      T("Final essay, 2,500–3,000 words","Assignment",4,100,"Compare at least two works from the course, engaging your three sources."),
+      T("Semester reflection","Assignment",4,5,"What changed in how you read? Which essay are you proudest of, and why?")]]
+  ])},
+
+{ key:"game", tier:"Core", name:"Game Programming in Roblox", code:"GAME 110", color:"teal", perDay:2,
+  summary:"Programming fundamentals in Luau, learned one working feature at a time. The first half covers the language and how Roblox runs code. The second half builds your own samurai duel sandbox.",
+  outputs:"A small finished game from midterm, and a playable duel arena with swings, hit detection, parries, a power meter and UI. Plus the fundamentals that carry over to any language.",
+  materials:["Roblox Studio (free)","Roblox Creator Hub: scripting tutorials and API reference","luau.org for language reference","AI as a tutor: it explains concepts and errors, and you type the code yourself"],
+  build: () => weekly([
+    ["Studio basics", [
+      T("Learn: install Studio, finish the Creator Hub's first scripting tutorial","Reading",2,null,"Explorer, Properties, Parts, and where Scripts run."),
+      T("Build: a part that changes color when touched","Lab",4,10,"Course rule: AI may explain concepts and your error messages, but you type every line yourself.")]],
+    ["Variables and functions", [
+      T("Learn: Luau variables, numbers, strings, functions","Reading",2),
+      T("Build: a function that spawns N parts in a ring","Lab",4,10)]],
+    ["Conditionals and loops", [
+      T("Learn: if/else, for and while loops, task.wait","Reading",2),
+      T("Build: platforms that vanish and return on a timer","Lab",4,10)]],
+    ["Events", [
+      T("Learn: events and :Connect (Touched, PlayerAdded, CharacterAdded)","Reading",2),
+      T("Build: a checkpoint system that respawns players at their last checkpoint","Lab",4,10)]],
+    ["Tables", [
+      T("Learn: arrays, dictionaries, pairs and ipairs","Reading",2),
+      T("Build: leaderstats with Kills and Coins","Lab",4,10)]],
+    ["Client and server", [
+      T("Learn: Scripts vs LocalScripts, RemoteEvents, never trusting the client","Reading",2),
+      T("Build: a GUI button that asks the server to act, with a server-side check","Lab",4,10)]],
+    ["ModuleScripts", [
+      T("Learn: ModuleScripts and require","Reading",2),
+      T("Build: move settings (damage, cooldowns) into a config module and refactor earlier code","Lab",4,10)]],
+    ["Midterm project", [
+      T("Midterm: a small complete game with a start, scoring and an end","Project",4,40,"An obby or an arena. Publish it privately and have one person play it."),
+      T("Postmortem, 1 page","Assignment",4,10,"What worked, what broke, what you'd do differently.")]],
+    ["Input and animation", [
+      T("Learn: ContextActionService, Animator and AnimationTracks","Reading",2),
+      T("Build: a sword swing on click, with animation","Lab",4,10)]],
+    ["Hit detection", [
+      T("Learn: raycasts, spatial queries (GetPartsInPart), debounces, cooldowns","Reading",2),
+      T("Build: a swing that damages a training dummy once per swing","Lab",4,10)]],
+    ["Combat state", [
+      T("Learn: simple state machines (idle, attacking, blocking, stunned)","Reading",2),
+      T("Build: blocking and a timed parry window","Lab",4,15)]],
+    ["Power meter", [
+      T("Learn: Attributes and server-authoritative values","Reading",2),
+      T("Build: a meter that fills on hits and parries and triggers a temporary power mode","Lab",4,15,"Your own take on a sakki-style mode: what fills it, what it unlocks, how long it lasts.")]],
+    ["Feel and feedback", [
+      T("Learn: ScreenGui, TweenService, Sounds, particles","Reading",2),
+      T("Build: health bar, meter UI, hit sounds and effects","Lab",4,10)]],
+    ["Saving data", [
+      T("Learn: DataStoreService and pcall error handling","Reading",2),
+      T("Build: save one stat between sessions","Lab",4,10)]],
+    ["Final project", [
+      T("Playtest with at least one person","Practice",3),
+      T("Final: playable duel arena","Project",4,100,"You against a dummy, or two players. Swing, hit, parry, meter, power mode, UI."),
+      T("Postmortem and next-steps list","Assignment",4,10)]]
+  ])},
+
+{ key:"jpn", tier:"Optional", name:"Japanese with Genki", code:"JPN 101", color:"rose", perDay:1,
+  summary:"One Genki lesson every two weeks, with daily Anki and a weekly tutor session for speaking. The tutor is the accountability this course runs on.",
+  outputs:"Seven Genki lessons finished with workbook, kanji and self-tests, plus a recorded 15-minute conversation in the last week.",
+  materials:["Genki textbook and workbook (3rd ed.) and the Genki audio","Anki with a Genki vocabulary deck","A weekly tutor (italki, Preply or similar), 30–60 minutes"],
+  build: () => {
+    const mods=[]; let w=1, n=Math.min(23, Math.max(1, ui.genki||1));
+    const book = k => k<=12 ? "Genki I" : "Genki II";
+    while (w<=13 && n<=23) {
+      const rw = n===1 ? "hiragana" : n===2 ? "katakana" : "kanji and reading";
+      const a=w, b=w+1;
+      mods.push({ name:`${book(n)} · Lesson ${n}`, week:a, items:[
+        {...T(`Vocab: add Lesson ${n} words to Anki`,"Practice",0), week:a},
+        {...T(`Grammar: first half of Lesson ${n}, with workbook pages`,"Reading",2), week:a},
+        {...T(`Tutor: Lesson ${n} dialogue and drills`,"Tutor",3,null,"Bring the dialogue. Ask the tutor to correct you, not to lecture."), week:a},
+        {...T("Anki every library day this week","Practice",4), week:a},
+        {...T(`Grammar: second half of Lesson ${n}, with workbook pages`,"Reading",1), week:b},
+        {...T(`Reading & Writing: Lesson ${n} (${rw})`,"Practice",2), week:b},
+        {...T(`Tutor: use Lesson ${n} grammar in free conversation`,"Tutor",3), week:b},
+        {...T(`Lesson ${n} self-test`,"Quiz",4,20,"Textbook review exercises plus the workbook listening section, without looking back."), week:b}
+      ]});
+      w+=2; n++;
+    }
+    while (w<=13) {
+      const a=w, b=w+1;
+      mods.push({ name:`Reading block (weeks ${a}–${b})`, week:a, items:[
+        {...T("Read two graded readers at your level","Reading",2), week:a},
+        {...T("Tutor: retell one story in Japanese","Tutor",3), week:a},
+        {...T("Read two more graded readers","Reading",2), week:b},
+        {...T("Tutor: free conversation","Tutor",3), week:b}
+      ]});
+      w+=2;
+    }
+    mods.push({ name:"Week 15 · Semester review", week:15, items:[
+      {...T("Review every lesson from this semester in Anki","Practice",1), week:15},
+      {...T("Tutor: 15-minute conversation, recorded","Tutor",3,null,"Keep the recording. It's your baseline for next time."), week:15},
+      {...T("Final self-test: all lessons this semester","Exam",4,50), week:15}
+    ]});
+    return mods;
+  }},
+
+{ key:"phil", tier:"Optional", name:"Critical Thinking & Philosophy", code:"PHIL 110", color:"plum", perDay:1,
+  summary:"How to build and test arguments, then practice on classic texts. Each week you put one argument into premises and a conclusion and evaluate it.",
+  outputs:"About ten argument reconstructions, a 1,200-word midterm paper, and a 2,000-word argumentative paper on a question you choose.",
+  materials:["Anthony Weston, A Rulebook for Arguments (short and inexpensive)","forall x: Calgary, a free open logic textbook","Plato, Descartes, Hume, Mill, Kant: free on Project Gutenberg","Optional: Shelly Kagan's “Death” lectures (Open Yale Courses) as a model of careful argument"],
+  build: () => weekly([
+    ["What an argument is", [
+      T("Read: Weston, the chapters on short arguments and generalizations","Reading",2),
+      T("Reconstruct three everyday arguments as premises and a conclusion","Assignment",4,10)]],
+    ["Analogies, sources, causes", [
+      T("Read: Weston, the chapters on analogies, sources and causes","Reading",2),
+      T("Find and evaluate one argument in an op-ed","Assignment",4,10)]],
+    ["Validity and soundness", [
+      T("Read: forall x, Part I (key notions of logic)","Reading",2),
+      T("Exercises from Part I","Assignment",4,10)]],
+    ["Fallacies", [
+      T("Read: Weston, the appendix on fallacies","Reading",2),
+      T("Fallacy log: ten real examples, each named and explained","Assignment",4,10)]],
+    ["Plato: Euthyphro", [
+      T("Read: Plato, Euthyphro","Reading",2),
+      T("Reconstruct the Euthyphro dilemma, then evaluate it in one page","Assignment",4,10)]],
+    ["Plato: Apology and Crito", [
+      T("Read: Plato, Apology and Crito","Reading",2),
+      T("Reconstruct Socrates' argument for not escaping, plus the strongest objection","Assignment",4,10)]],
+    ["Plato: Meno", [
+      T("Read: Plato, Meno","Reading",2),
+      T("Reconstruct the argument that learning is recollection","Assignment",4,10)]],
+    ["Midterm paper", [
+      T("Midterm paper, 1,200 words","Assignment",4,40,"Reconstruct one argument from Plato, raise your best objection, and reply to it.")]],
+    ["Descartes: doubt", [
+      T("Read: Descartes, Meditations I and II","Reading",2),
+      T("Reconstruct the cogito","Assignment",4,10)]],
+    ["Descartes: mind and body", [
+      T("Read: Descartes, Meditation VI","Reading",2),
+      T("Evaluate the argument that mind and body are distinct","Assignment",4,10)]],
+    ["Hume: induction", [
+      T("Read: Hume, Enquiry Concerning Human Understanding, Section IV","Reading",2),
+      T("Reconstruct the problem of induction","Assignment",4,10)]],
+    ["Mill: utilitarianism", [
+      T("Read: Mill, Utilitarianism, Ch. 2","Reading",2),
+      T("Reconstruct Mill's view and test it on a counterexample","Assignment",4,10)]],
+    ["Kant: duty", [
+      T("Read: Kant, Groundwork of the Metaphysics of Morals, Section I","Reading",2),
+      T("Compare Mill and Kant on one concrete case","Assignment",4,10)]],
+    ["Writing arguments", [
+      T("Read: Weston, the chapters on argumentative essays","Reading",2),
+      T("Final paper proposal and outline","Assignment",4,10)]],
+    ["Final paper", [
+      T("Final paper, 2,000 words","Assignment",4,100,"Your own question. State a thesis, argue for it, raise the two strongest objections, and reply.")]]
+  ])}
+];
+
+function importTemplate(key){
+  const t = TEMPLATES.find(x=>x.key===key); if (!t) return;
+  const id = uid(); const ord = Math.max(0, ...ordered().map(s=>s.order||0)) + 1;
+  subjects[id] = { name:t.name, code:t.code, instructor:"Self-directed", color:t.color, order:ord, createdAt:Date.now(), templateKey:key,
+    modules: t.build().map(m => ({ id:uid(), name:m.name, items:m.items.map(s => ({ id:uid(), title:s.title, type:s.type, due:dueStr(s.week, s.day, s.time), points:s.points, score:null, done:false, notes:s.notes })) })) };
+  touch(id); toast(t.code + " added to your Coursebook");
+}
+
+function planView(){
+  const end = weekDate(PLAN_WEEKS, 4);
+  const added = key => ordered().find(s=>s.templateKey===key);
+  const total = TEMPLATES.reduce((n,t)=>n+t.perDay, 0);
+  const cards = TEMPLATES.map(t => {
+    const mods = t.build(); const count = mods.reduce((n,m)=>n+m.items.length, 0);
+    const ex = added(t.key);
+    const outline = mods.map(m => `<li><span class="n">${esc(shortDate(weekDate(m.week,0)))}</span><span>${esc(m.name)}</span><span class="n">${m.items.length}</span></li>`).join("");
+    return `<article class="plan" style="--subj:${colorVar(t.color)}">
+      <header>
+        <div class="badge sm">${esc(t.code.split(" ")[0].slice(0,4))}</div>
+        <div class="t"><div class="label">${t.tier} · ${t.perDay} hr${t.perDay>1?"s":""}/day</div><h3>${esc(t.name)}</h3><div class="mono note">${esc(t.code)} · ${mods.length} modules · ${count} assignments</div></div>
+        <div class="row">${ex ? `<a class="btn" href="#s-${ex.id}" style="text-decoration:none">Open</a><button class="btn ghost sm" data-act="import" data-k="${t.key}">Add again</button>` : `<button class="btn primary" data-act="import" data-k="${t.key}">Add to Coursebook</button>`}</div>
+      </header>
+      <p>${esc(t.summary)}</p>
+      <dl><dt>By the end</dt><dd>${esc(t.outputs)}</dd><dt>Materials</dt><dd><ul>${t.materials.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></dd></dl>
+      <details><summary>Week-by-week outline</summary><ol class="outline">${outline}</ol></details>
+    </article>`;
+  }).join("");
+  const opts = Array.from({length:23},(_,i)=>`<option value="${i+1}" ${ (ui.genki||1)===i+1?"selected":""}>Lesson ${i+1}${i+1===1?" (start of Genki I)":i+1===13?" (start of Genki II)":""}</option>`).join("");
+  return `
+    <div class="head"><div><h2>Spring plan</h2><div class="sub">Four self-directed courses over 15 weeks. Set your first Monday, then add the courses you want. Due dates fill in automatically.</div></div></div>
+    <div class="planbar">
+      <label class="field"><span>First day of week 1</span><input type="date" id="plan-start" value="${esc(planStart())}"></label>
+      <label class="field"><span>Genki: start at</span><select id="plan-genki">${opts}</select></label>
+      <div class="field"><span>Runs</span><div class="span">${esc(shortDate(weekDate(1,0)))} – ${esc(shortDate(end))}, ${end.getFullYear()}</div></div>
+    </div>
+    <div class="day">
+      <div class="label">A library day · ${total} hours</div>
+      <div class="hbar">${TEMPLATES.map(t=>`<i style="--subj:${colorVar(t.color)};flex:${t.perDay}" class="${t.tier==="Optional"?"off":""}"></i>`).join("")}</div>
+      <div class="hleg">${TEMPLATES.map(t=>`<span style="--subj:${colorVar(t.color)}"><b></b>${esc(t.code)} · ${t.perDay}h${t.tier==="Optional"?" (optional)":""}</span>`).join("")}</div>
+    </div>
+    ${cards}
+    <p class="note">To change a course's dates after adding it, delete that subject from Edit subject, change the start date here, and add it again. Changing the Genki lesson only affects courses you add afterward.</p>`;
+}
+
+
+/* ---------- import & backup ---------- */
+const DAYS = {mon:0,monday:0,tue:1,tues:1,tuesday:1,wed:2,weds:2,wednesday:2,thu:3,thur:3,thurs:3,thursday:3,fri:4,friday:4,sat:5,saturday:5,sun:6,sunday:6};
+let ioText = "";
+let ioMsg = null;      // {ok, title, lines}
+let ioPending = null;  // parsed backup awaiting a second click
+
+function normTime(s){
+  s = (s||"").replace(/\s+/g,"").toLowerCase();
+  let m = s.match(/^(\d{1,2}):(\d{2})$/);
+  if (m && +m[1] < 24 && +m[2] < 60) return pad(+m[1])+":"+m[2];
+  m = s.match(/^(\d{1,2})(?::(\d{2}))?(am|pm)$/);
+  if (m && +m[1] >= 1 && +m[1] <= 12){ let h = (+m[1]) % 12; if (m[3]==="pm") h += 12; return pad(h)+":"+(m[2]||"00"); }
+  return null;
+}
+function parseItemDue(tok, start){
+  let raw = (tok||"").trim().toLowerCase();
+  if (!raw) return "";
+  let time = "17:00";
+  const at = raw.split("@");
+  raw = at[0].trim();
+  if (at.length > 1){ const t = normTime(at[1]); if (!t) return null; time = t; }
+  if (!raw) return "";
+  let m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m){ const d = new Date(+m[1], +m[2]-1, +m[3]); if (isNaN(d)) return null; return m[0]+"T"+time; }
+  m = raw.match(/^w(\d{1,2})(?:\s*(?:d(\d)|([a-z]+)))?$/);
+  if (m){
+    const w = Math.max(1, parseInt(m[1],10));
+    let d = 4;
+    if (m[2] != null) d = parseInt(m[2],10);
+    else if (m[3]){ if (!(m[3] in DAYS)) return null; d = DAYS[m[3]]; }
+    const [y,mo,dd] = start.split("-").map(Number);
+    return ymd(new Date(y, mo-1, dd + (w-1)*7 + d)) + "T" + time;
+  }
+  return null;
+}
+function parseCourses(text){
+  const out = [], errors = [];
+  let c = null, mod = null;
+  const startCourse = name => { c = {name: name || "Untitled course", code:"", instructor:"", color:null, start: planStart(), modules:[]}; out.push(c); mod = null; };
+  text.split(/\r?\n/).forEach((raw, i) => {
+    const ln = i + 1;
+    let line = raw.trim();
+    if (!line || line.startsWith("#") || line.startsWith("//")) return;
+    if (/^[-*]\s*/.test(line)){
+      if (!c) { errors.push("Line "+ln+": an assignment before any COURSE: line."); return; }
+      if (!mod){ mod = {name:"Assignments", items:[]}; c.modules.push(mod); }
+      const parts = line.replace(/^[-*]\s*/,"").split("|").map(x=>x.trim());
+      const title = parts[0];
+      if (!title){ errors.push("Line "+ln+": this assignment has no title."); return; }
+      let type = "Assignment";
+      if (parts[1]){
+        const hit = TYPES.find(t => t.toLowerCase() === parts[1].toLowerCase());
+        if (hit) type = hit; else errors.push("Line "+ln+": “"+parts[1]+"” isn't a type, so it was filed as Assignment.");
+      }
+      let due = "";
+      if (parts[2]){
+        const d = parseItemDue(parts[2], c.start);
+        if (d === null) errors.push("Line "+ln+": couldn't read the due date “"+parts[2]+"”, so it was left blank.");
+        else due = d;
+      }
+      let points = null;
+      if (parts[3]){
+        const n = Number(parts[3]);
+        if (isNaN(n)) errors.push("Line "+ln+": “"+parts[3]+"” isn't a number of points, so it was left blank.");
+        else points = n;
+      }
+      mod.items.push({title, type, due, points, notes: parts.slice(4).join(" | ")});
+      return;
+    }
+    const kv = line.match(/^([A-Za-z]+)\s*:\s*(.*)$/);
+    if (kv){
+      const k = kv[1].toUpperCase(), v = kv[2].trim();
+      if (k === "COURSE"){ startCourse(v); return; }
+      if (k === "MODULE"){ if (!c) startCourse(""); mod = {name: v || ("Module "+(c.modules.length+1)), items:[]}; c.modules.push(mod); return; }
+      if (!c){ errors.push("Line "+ln+": "+k+" appears before any COURSE: line."); return; }
+      if (k === "CODE") c.code = v.slice(0,20);
+      else if (k === "INSTRUCTOR") c.instructor = v.slice(0,60);
+      else if (k === "COLOR"){ if (COLORS.includes(v.toLowerCase())) c.color = v.toLowerCase(); else errors.push("Line "+ln+": “"+v+"” isn't one of the colors, so one was picked for you."); }
+      else if (k === "START"){ if (/^\d{4}-\d{2}-\d{2}$/.test(v)) c.start = v; else errors.push("Line "+ln+": START should look like 2027-01-11."); }
+      else errors.push("Line "+ln+": “"+k+"” isn't a setting Coursebook knows.");
+      return;
+    }
+    errors.push("Line "+ln+": couldn't read “"+line.slice(0,46)+"”. Assignment lines start with a dash.");
+  });
+  return {courses: out, errors};
+}
+function applyCourses(courses){
+  let ord = Math.max(0, ...ordered().map(s=>s.order||0));
+  let first = null;
+  courses.forEach(c => {
+    const id = uid(); ord++;
+    subjects[id] = { name:c.name.slice(0,80), code:c.code, instructor:c.instructor, color: c.color || COLORS[ord % COLORS.length], order:ord, createdAt:Date.now(),
+      modules: c.modules.map(m => ({ id:uid(), name:m.name.slice(0,80), items:m.items.map(it => ({ id:uid(), title:it.title.slice(0,140), type:it.type, due:it.due, points:it.points, score:null, done:false, notes:(it.notes||"").slice(0,4000) })) })) };
+    persist(id);
+    if (!first) first = id;
+  });
+  return first;
+}
+function backupText(){ return JSON.stringify({coursebook:1, exported:new Date().toISOString(), subjects}, null, 1); }
+function readBackup(text){
+  let o; try { o = JSON.parse(text); } catch(e){ return null; }
+  const src = (o && typeof o === "object" && o.subjects && typeof o.subjects === "object") ? o.subjects : o;
+  if (!src || typeof src !== "object" || Array.isArray(src)) return null;
+  const clean = {};
+  for (const [id, s] of Object.entries(src)){
+    if (!s || typeof s !== "object" || typeof s.name !== "string" || !Array.isArray(s.modules)) return null;
+    clean[String(id).slice(0,40).replace(/[^A-Za-z0-9_-]/g,"")||uid()] = {
+      name:String(s.name).slice(0,80), code:String(s.code||"").slice(0,20), instructor:String(s.instructor||"").slice(0,60),
+      color: COLORS.includes(s.color) ? s.color : "cobalt", order: Number(s.order)||0, createdAt: Number(s.createdAt)||Date.now(),
+      templateKey: typeof s.templateKey === "string" ? s.templateKey : undefined,
+      modules: s.modules.filter(m=>m&&typeof m==="object").map(m => ({ id:String(m.id||uid()), name:String(m.name||"Module").slice(0,80),
+        items: (Array.isArray(m.items)?m.items:[]).filter(i=>i&&typeof i==="object").map(i => ({ id:String(i.id||uid()), title:String(i.title||"Untitled").slice(0,140),
+          type: TYPES.includes(i.type) ? i.type : "Assignment", due: typeof i.due === "string" ? i.due : "",
+          points: i.points==null||isNaN(Number(i.points)) ? null : Number(i.points),
+          score: i.score==null||i.score===""||isNaN(Number(i.score)) ? null : Number(i.score),
+          done: !!i.done, notes:String(i.notes||"").slice(0,4000) })) })) };
+  }
+  return clean;
+}
+function restoreBackup(clean){
+  const oldIds = Object.keys(subjects);
+  subjects = clean;
+  oldIds.forEach(id => { if (!(id in subjects)) persist(id); });
+  Object.keys(subjects).forEach(id => persist(id));
+}
+function runImport(text){
+  ioPending = null;
+  if (!text.trim()){ ioMsg = {ok:false, title:"Nothing to import.", lines:["Paste a course or a backup into the box first."]}; return render(); }
+  if (text.trim().startsWith("{")){
+    const clean = readBackup(text);
+    if (!clean){ ioMsg = {ok:false, title:"That backup couldn't be read.", lines:["Make sure you copied the whole thing, from the first { to the last }."]}; return render(); }
+    const n = Object.values(clean).reduce((a,s)=>a+s.modules.reduce((b,m)=>b+m.items.length,0),0);
+    ioPending = clean;
+    ioMsg = {ok:false, title:"Restoring replaces everything you have now.", lines:[
+      "This backup holds "+Object.keys(clean).length+" subject"+(Object.keys(clean).length===1?"":"s")+" and "+n+" assignment"+(n===1?"":"s")+".",
+      "Your current "+ordered().length+" subject"+(ordered().length===1?"":"s")+" will be deleted. Click Replace everything to go ahead."]};
+    return render();
+  }
+  const {courses, errors} = parseCourses(text);
+  const kept = courses.filter(c => c.modules.some(m => m.items.length));
+  if (!kept.length){
+    ioMsg = {ok:false, title:"No courses found in that text.", lines: errors.length ? errors.slice(0,8) : ["A course starts with a COURSE: line and needs at least one assignment."]};
+    return render();
+  }
+  const first = applyCourses(kept);
+  const n = kept.reduce((a,c)=>a+c.modules.reduce((b,m)=>b+m.items.length,0),0);
+  ioText = "";
+  ioMsg = {ok:true, title:"Imported "+kept.length+" course"+(kept.length===1?"":"s")+", "+n+" assignment"+(n===1?"":"s")+".",
+    lines: errors.length ? ["Some lines needed fixing up:"].concat(errors.slice(0,8)) : kept.map(c => c.name + " · " + c.modules.length + " modules")};
+  render();
+  if (!errors.length && first) location.hash = "s-" + first;
+}
+
+function dataView(){
+  const n = allItems().length, subs = ordered().length;
+  return `
+    <div class="head"><div><h2>Import &amp; backup</h2><div class="sub">Paste in a course to add it, or copy your backup to move everything to another device.</div></div></div>
+    <section class="plan">
+      <h3>Paste a course</h3>
+      <p>Paste course text here and it is added to your subjects. Nothing you already have is changed. Pasting backup text instead will offer to restore it.</p>
+      <textarea class="io" id="io-in" spellcheck="false" placeholder="COURSE: Japanese with Genki&#10;CODE: JPN 101&#10;&#10;MODULE: Week 1&#10;- Lesson 1 vocab | Practice | w1 mon">${esc(ioText)}</textarea>
+      <div class="row">
+        <button class="btn primary" data-act="io-import">Import</button>
+        ${ioPending ? `<button class="btn danger armed" data-act="io-restore">Replace everything</button>` : ""}
+        <button class="btn ghost" data-act="io-clear">Clear</button>
+      </div>
+      ${ioMsg ? `<div class="iomsg ${ioMsg.ok?"ok":"bad"}"><b>${esc(ioMsg.title)}</b>${ioMsg.lines.map(l=>`<div>${esc(l)}</div>`).join("")}</div>` : ""}
+    </section>
+    <section class="plan">
+      <h3>Your backup</h3>
+      <p>${subs} subject${subs===1?"":"s"} and ${n} assignment${n===1?"":"s"}, including what you have checked off and your scores. Copy this and keep it somewhere safe, or paste it into the box above on another device.</p>
+      <textarea class="io" id="io-out" readonly spellcheck="false" aria-label="Backup text">${esc(backupText())}</textarea>
+      <div class="row"><button class="btn" data-act="io-copy">Copy backup</button></div>
+    </section>
+    <section class="plan">
+      <h3>Course format</h3>
+      <p>Every course is plain text in this shape, so you can write or edit one yourself.</p>
+      <pre class="fmt">${esc(FORMAT_HELP)}</pre>
+    </section>`;
+}
+const FORMAT_HELP = [
+  "COURSE: Japanese with Genki",
+  "CODE: JPN 101",
+  "COLOR: rose              " + COLORS.join(" "),
+  "START: 2027-01-11        the Monday week 1 begins",
+  "",
+  "MODULE: Week 1 · Lesson 1",
+  "- Add Lesson 1 vocab to Anki | Practice | w1 mon",
+  "- Grammar: first half | Reading | w1 wed | 10 | Workbook too",
+  "- Tutor session | Tutor | w1 thu @4pm",
+  "- Lesson 1 self-test | Quiz | w1 fri | 20",
+  "",
+  "MODULE: Week 2 · Lesson 2",
+  "- Reading & Writing section | Practice | w2 tue",
+  "",
+  "Each assignment line is:",
+  "- title | type | due | points | notes",
+  "",
+  "Only the title is required. A due date is either w3 fri",
+  "(week 3, Friday) or a date like 2027-03-04, and can end",
+  "with @4pm or @16:00. Without a time, 5pm is used.",
+  "",
+  "Types: " + TYPES.join(", ")
+].join("\n");
+
+/* ---------- modals ---------- */
+let modalClose = null;
+function modal(html, onMount){
+  const root=$("#modalRoot");
+  root.innerHTML = `<div class="scrim" data-scrim><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const sheet = root.querySelector(".sheet");
+  const close = () => { root.innerHTML=""; document.removeEventListener("keydown", onKey); modalClose=null; };
+  const onKey = e => { if (e.key==="Escape") close(); };
+  document.addEventListener("keydown", onKey);
+  root.querySelector("[data-scrim]").addEventListener("mousedown", e => { if (e.target.hasAttribute("data-scrim")) close(); });
+  modalClose = close;
+  onMount && onMount(sheet, close);
+  const f = sheet.querySelector("input,select,textarea"); f && f.focus();
+}
+function armDelete(btn, fn){
+  btn.addEventListener("click", () => { if (btn.classList.contains("armed")) fn(); else { btn.classList.add("armed"); btn.textContent="Click again to delete"; setTimeout(()=>{ btn.classList.remove("armed"); btn.textContent=btn.dataset.label; }, 3500); } });
+}
+function swatchHTML(sel){ return `<div class="swatches" id="f-color">${COLORS.map(c=>`<button type="button" style="--c:${colorVar(c)}" data-c="${c}" aria-pressed="${c===sel}" aria-label="${c}"></button>`).join("")}</div>`; }
+function wireSwatches(sheet){ let val = sheet.querySelector('#f-color [aria-pressed="true"]').dataset.c; sheet.querySelectorAll("#f-color button").forEach(b=>b.addEventListener("click",()=>{ sheet.querySelectorAll("#f-color button").forEach(x=>x.setAttribute("aria-pressed","false")); b.setAttribute("aria-pressed","true"); val=b.dataset.c; })); return ()=>val; }
+
+function subjectModal(id){
+  const s = id ? subjects[id] : {name:"",code:"",instructor:"",color:COLORS[ordered().length % COLORS.length]};
+  modal(`<h3>${id?"Edit subject":"New subject"}</h3>
+    <form id="f" class="field" style="gap:12px">
+      <label class="field"><span>Name</span><input id="f-name" required maxlength="80" value="${esc(s.name)}" placeholder="e.g. College Writing"></label>
+      <div class="grid2">
+        <label class="field"><span>Course code</span><input id="f-code" maxlength="20" value="${esc(s.code)}" placeholder="e.g. ENGW 1111"></label>
+        <label class="field"><span>Instructor</span><input id="f-inst" maxlength="60" value="${esc(s.instructor||"")}" placeholder="optional"></label>
+      </div>
+      <div class="field"><span>Color</span>${swatchHTML(s.color)}</div>
+      <div class="actions">${id?`<button type="button" class="btn danger" id="del" data-label="Delete subject">Delete subject</button>`:"<span></span>"}<div class="row"><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn primary">${id?"Save":"Create"}</button></div></div>
+    </form>`, (sheet, close) => {
+      const getColor = wireSwatches(sheet);
+      sheet.querySelector("#cancel").onclick = close;
+      sheet.querySelector("#f").addEventListener("submit", e => { e.preventDefault();
+        const data = {name:sheet.querySelector("#f-name").value.trim(), code:sheet.querySelector("#f-code").value.trim(), instructor:sheet.querySelector("#f-inst").value.trim(), color:getColor()};
+        if (!data.name) return;
+        close();
+        if (id) { Object.assign(subjects[id], data); touch(id); } else newSubject(data);
+      });
+      const del = sheet.querySelector("#del");
+      del && armDelete(del, () => { delete subjects[id]; close(); persist(id); location.hash="upcoming"; render(); toast("Subject deleted"); });
+    });
+}
+
+function moduleModal(sid, mid){
+  const s = subjects[sid]; const m = mid ? s.modules.find(x=>x.id===mid) : {name:"Week "+((s.modules||[]).length+1)};
+  const idx = mid ? s.modules.indexOf(m) : -1;
+  modal(`<h3>${mid?"Edit module":"New module"}</h3>
+    <form id="f" class="field" style="gap:12px">
+      <label class="field"><span>Module name</span><input id="f-name" required maxlength="80" value="${esc(m.name)}"></label>
+      ${mid ? `<div class="row"><button type="button" class="btn sm" id="up" ${idx<=0?"disabled":""}>Move up</button><button type="button" class="btn sm" id="down" ${idx>=s.modules.length-1?"disabled":""}>Move down</button></div>` : ""}
+      <div class="actions">${mid?`<button type="button" class="btn danger" id="del" data-label="Delete module">Delete module</button>`:"<span></span>"}<div class="row"><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn primary">${mid?"Save":"Add module"}</button></div></div>
+      ${mid && (m.items||[]).length ? `<p class="note">Deleting removes its ${m.items.length} assignment${m.items.length>1?"s":""} too.</p>`:""}
+    </form>`, (sheet, close) => {
+      sheet.querySelector("#cancel").onclick = close;
+      sheet.querySelector("#f").addEventListener("submit", e => { e.preventDefault(); const name=sheet.querySelector("#f-name").value.trim(); if(!name) return; close();
+        if (mid) m.name = name; else (s.modules = s.modules||[]).push({id:uid(), name, items:[]});
+        touch(sid); });
+      const mv = d => { const a=s.modules; const [x]=a.splice(idx,1); a.splice(idx+d,0,x); close(); touch(sid); };
+      sheet.querySelector("#up") && (sheet.querySelector("#up").onclick = () => mv(-1));
+      sheet.querySelector("#down") && (sheet.querySelector("#down").onclick = () => mv(1));
+      const del = sheet.querySelector("#del");
+      del && armDelete(del, () => { s.modules = s.modules.filter(x=>x.id!==mid); close(); touch(sid); });
+    });
+}
+
+function itemModal(sid, iid, mid){
+  const subs = ordered();
+  if (!subs.length) { toast("Create a subject first"); return; }
+  const found = iid ? findItem(sid, iid) : null;
+  const it = found ? found.it : {title:"", type:"Assignment", due:"", points:"", score:"", done:false, notes:""};
+  const curS = found ? sid : (sid || subs[0].id);
+  const curM = found ? found.m.id : (mid || (subjects[curS].modules||[])[0]?.id);
+  const [dDate, dTime] = it.due ? it.due.split("T") : ["", "23:59"];
+  const modOpts = s => (subjects[s].modules||[]).map(m=>`<option value="${m.id}">${esc(m.name)}</option>`).join("");
+  modal(`<h3>${iid?"Edit assignment":"New assignment"}</h3>
+    <form id="f" class="field" style="gap:12px">
+      <label class="field"><span>Title</span><input id="f-title" required maxlength="140" value="${esc(it.title)}" placeholder="e.g. Essay 2 draft"></label>
+      <div class="grid2">
+        <label class="field"><span>Subject</span><select id="f-subj">${subs.map(s=>`<option value="${s.id}" ${s.id===curS?"selected":""}>${esc(s.code||s.name)}</option>`).join("")}</select></label>
+        <label class="field"><span>Module</span><select id="f-mod">${modOpts(curS)}</select></label>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>Due date</span><input id="f-date" type="date" value="${esc(dDate)}"></label>
+        <label class="field"><span>Due time</span><input id="f-time" type="time" value="${esc(dTime||"23:59")}"></label>
+      </div>
+      <div class="grid2">
+        <label class="field"><span>Type</span><select id="f-type">${TYPES.map(t=>`<option ${t===it.type?"selected":""}>${t}</option>`).join("")}</select></label>
+        <div class="grid2" style="gap:8px">
+          <label class="field"><span>Points</span><input id="f-pts" type="number" min="0" step="any" inputmode="decimal" value="${esc(it.points ?? "")}"></label>
+          <label class="field"><span>Score</span><input id="f-score" type="number" min="0" step="any" inputmode="decimal" value="${esc(it.score ?? "")}" placeholder="once graded"></label>
+        </div>
+      </div>
+      <label class="field"><span>Notes</span><textarea id="f-notes" maxlength="4000" placeholder="Instructions, links, rubric details">${esc(it.notes||"")}</textarea></label>
+      <label class="row" style="gap:8px"><input type="checkbox" class="check" id="f-done" ${it.done?"checked":""}> <span>Done</span></label>
+      <div class="actions">${iid?`<button type="button" class="btn danger" id="del" data-label="Delete">Delete</button>`:"<span></span>"}<div class="row"><button type="button" class="btn ghost" id="cancel">Cancel</button><button class="btn primary">${iid?"Save":"Add assignment"}</button></div></div>
+    </form>`, (sheet, close) => {
+      const subjSel = sheet.querySelector("#f-subj"), modSel = sheet.querySelector("#f-mod");
+      if (curM) modSel.value = curM;
+      subjSel.addEventListener("change", () => { modSel.innerHTML = modOpts(subjSel.value); });
+      sheet.querySelector("#cancel").onclick = close;
+      sheet.querySelector("#f").addEventListener("submit", e => { e.preventDefault();
+        const title = sheet.querySelector("#f-title").value.trim(); if(!title) return;
+        const ns = subjSel.value; let nm = modSel.value;
+        const tgt = subjects[ns]; tgt.modules = tgt.modules||[];
+        if (!nm) { const m={id:uid(), name:"General", items:[]}; tgt.modules.push(m); nm=m.id; }
+        const date = sheet.querySelector("#f-date").value, time = sheet.querySelector("#f-time").value || "23:59";
+        const num = v => v==="" ? null : Number(v);
+        const data = { title, type:sheet.querySelector("#f-type").value, due: date ? date+"T"+time : "", points:num(sheet.querySelector("#f-pts").value), score:num(sheet.querySelector("#f-score").value), notes:sheet.querySelector("#f-notes").value, done:sheet.querySelector("#f-done").checked };
+        close();
+        if (found) {
+          if (ns===sid && nm===found.m.id) { Object.assign(found.it, data); touch(sid); }
+          else { found.m.items = found.m.items.filter(x=>x.id!==iid); tgt.modules.find(m=>m.id===nm).items.push({...found.it, ...data}); persist(sid); touch(ns); }
+        } else {
+          const m = tgt.modules.find(m=>m.id===nm); (m.items=m.items||[]).push({id:uid(), ...data}); touch(ns); toast("Added");
+        }
+      });
+      const del = sheet.querySelector("#del");
+      del && armDelete(del, () => { found.m.items = found.m.items.filter(x=>x.id!==iid); close(); touch(sid); toast("Deleted"); });
+    });
+}
+
+/* ---------- events ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-act]"); if (!t) return;
+  const a = t.dataset.act;
+  if (a==="toggle") { const f=findItem(t.dataset.s, t.dataset.i); if(f){ f.it.done = t.checked; touch(t.dataset.s); } return; }
+  if (a==="edit") return itemModal(t.dataset.s, t.dataset.i);
+  if (a==="new-item") return itemModal(t.dataset.s || (route().view==="subject"?route().id:null), null, t.dataset.m);
+  if (a==="new-subject") return subjectModal();
+  if (a==="edit-subject") return subjectModal(t.dataset.s);
+  if (a==="new-module") return moduleModal(t.dataset.s);
+  if (a==="edit-module") return moduleModal(t.dataset.s, t.dataset.m);
+  if (a==="sample") return loadSample();
+  if (a==="show-done") { ui.showDone=!ui.showDone; return render(); }
+  if (a==="collapse") { const k=t.dataset.k; ui.collapsed[k] = t.dataset.col !== "1"; try{localStorage.setItem(LS_KEY+".ui", JSON.stringify(ui.collapsed));}catch(err){} return render(); }
+  if (a==="show-later") { ui.showLater=!ui.showLater; return render(); }
+  if (a==="import") return importTemplate(t.dataset.k);
+  if (a==="io-import") { const el=$("#io-in"); ioText = el ? el.value : ""; return runImport(ioText); }
+  if (a==="io-clear") { ioText=""; ioMsg=null; ioPending=null; return render(); }
+  if (a==="io-restore") {
+    if (!ioPending) return;
+    const clean = ioPending; ioPending = null;
+    restoreBackup(clean);
+    const n = allItems().length;
+    ioText=""; ioMsg = {ok:true, title:"Backup restored.", lines:[ordered().length+" subject"+(ordered().length===1?"":"s")+" and "+n+" assignment"+(n===1?"":"s")+" are back."]};
+    return render();
+  }
+  if (a==="io-copy") {
+    const ta=$("#io-out"); if (!ta) return;
+    const done = () => toast("Backup copied");
+    const manual = () => { try{ ta.focus(); ta.select(); }catch(err){} toast("Select all in the box, then copy"); };
+    try { navigator.clipboard.writeText(ta.value).then(done, manual); } catch(err){ manual(); }
+    return;
+  }
+  if (a==="cal") { const d=+t.dataset.d; const b=ui.calMonth; ui.calMonth = d===0 ? null : new Date(b.getFullYear(), b.getMonth()+d, 1); return render(); }
+});
+document.addEventListener("keydown", e => { if ((e.key==="Enter"||e.key===" ") && e.target.matches('.item .body')) { e.preventDefault(); e.target.click(); } });
+$("#addSubjectBtn").addEventListener("click", () => subjectModal());
+document.addEventListener("change", e => {
+  if (e.target.id==="plan-start") { if (e.target.value) { ui.planStart = e.target.value; savePlanPrefs(); render(); } }
+  if (e.target.id==="plan-genki") { ui.genki = Number(e.target.value)||1; savePlanPrefs(); render(); }
+});
+
+let toastT;
+function toast(msg){ let el=document.querySelector(".toast"); if(!el){ el=document.createElement("div"); el.className="toast"; el.setAttribute("role","status"); document.body.appendChild(el); } el.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>el.remove(), 2600); }
+
+init();
+})();
+</script>
+
+</body>
+</html>
